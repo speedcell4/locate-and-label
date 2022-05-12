@@ -1,23 +1,25 @@
-import pdb
 import random
 
 import torch
-from torch._C import dtype
 
 from identifier import util
 
 v_map = {}
 v_map["enumerate_count"] = 0
 
-def get_v(k = "enumerate_count"):
+
+def get_v(k="enumerate_count"):
     global v_map
     return v_map[k]
 
-def set_v(k = "enumerate_count", v = 1):
+
+def set_v(k="enumerate_count", v=1):
     global v_map
     v_map["enumerate_count"] = v
 
-def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_sizes: list, rel_type_count: int, iou_spn:float, iou_classifier:float):
+
+def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_sizes: list, rel_type_count: int,
+                        iou_spn: float, iou_classifier: float):
     pos_encoding = [t.pos_id for t in doc.tokens]
     wordvec_encoding = [t.wordinx for t in doc.tokens]
     encodings = doc.encoding
@@ -29,15 +31,14 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
     char_count = []
     for char_encoding_token in char_encodings:
         char_count.append(len(char_encoding_token))
-        char_encoding.append(torch.tensor(char_encoding_token,dtype=torch.long))
+        char_encoding.append(torch.tensor(char_encoding_token, dtype=torch.long))
     char_encoding = util.padded_stack(char_encoding)
-    token_masks_char = (char_encoding!=0).long()
-    char_count = torch.tensor(char_count, dtype = torch.long)
+    token_masks_char = (char_encoding != 0).long()
+    char_count = torch.tensor(char_count, dtype=torch.long)
 
     # import pdb; pdb.set_trace()
 
     # token_masks_char = []
-    
 
     # all tokens
     token_spans, token_masks, token_sizes, token_pos = [], [], [], []
@@ -48,7 +49,7 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
         # token_masks_char.append(create_entity_mask(*t.char_span, char_count))
         token_sizes.append(t.span_end - t.span_start)
 
-    token_sample_mask = torch.ones([len(token_spans)], dtype=torch.bool) 
+    token_sample_mask = torch.ones([len(token_spans)], dtype=torch.bool)
 
     gt_entities_spans_token = []
     gt_entities_spans = []
@@ -77,9 +78,9 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
         for i in range(0, token_count):
             # w_left = max(0, i - window_size)
             w_left = i
-            w_right = min(token_count, i + window_size + 1) 
+            w_right = min(token_count, i + window_size + 1)
             span = doc.tokens[w_left:w_right].span
-            span_token =  doc.tokens[w_left:w_right].span_token
+            span_token = doc.tokens[w_left:w_right].span_token
             if span_token not in pos_entity_spans_token and span_token not in neg_entity_spans_token:
                 flag_max_iou = 0
                 ty, left, right = 0, 0, 0
@@ -91,13 +92,13 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
                         ty = gt_entity_types[i]
                         left = gt_entities_span_token[0] - span_token[0]
                         right = gt_entities_span_token[1] - span_token[1]
-                
+
                 if flag_max_iou > iou_spn:
                     pos_ious.append(flag_max_iou)
                     pos_entity_types.append(ty)
                     pos_entity_spans.append(span)
                     pos_entity_spans_token.append(span_token)
-                    pos_entity_sizes.append(w_right-w_left)
+                    pos_entity_sizes.append(w_right - w_left)
                     pos_l_offsets.append(left)
                     pos_r_offsets.append(right)
                     pos_offset_sample_masks.append(1)
@@ -106,7 +107,7 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
                     neg_entity_types.append(0)
                     neg_entity_spans.append(span)
                     neg_entity_spans_token.append(span_token)
-                    neg_entity_sizes.append(w_right-w_left)
+                    neg_entity_sizes.append(w_right - w_left)
                     neg_l_offsets.append(0)
                     neg_r_offsets.append(0)
                     neg_offset_sample_masks.append(0)
@@ -116,7 +117,7 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
     for i, gt_entities_span_token in enumerate(gt_entities_spans_token):
         if gt_entities_span_token not in pos_entity_spans_token:
             pos_entity_spans_token.append(gt_entities_span_token)
-            pos_entity_sizes.append(gt_entities_span_token[1]-gt_entities_span_token[0])
+            pos_entity_sizes.append(gt_entities_span_token[1] - gt_entities_span_token[0])
             pos_l_offsets.append(0)
             pos_r_offsets.append(0)
             pos_entity_spans.append(gt_entities_spans[i])
@@ -126,9 +127,12 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
 
     # sample negative entities
     neg_entity_count = neg_entity_count * len(pos_entity_spans_token) + 2
-    neg_entity_samples = random.sample(list(zip(neg_ious, neg_entity_types, neg_entity_spans, neg_entity_spans_token, neg_entity_sizes, neg_l_offsets, neg_r_offsets, neg_offset_sample_masks)),min(len(neg_entity_spans), neg_entity_count))
+    neg_entity_samples = random.sample(list(
+        zip(neg_ious, neg_entity_types, neg_entity_spans, neg_entity_spans_token, neg_entity_sizes, neg_l_offsets,
+            neg_r_offsets, neg_offset_sample_masks)), min(len(neg_entity_spans), neg_entity_count))
     # print(neg_entity_samples)
-    neg_ious, neg_entity_types, neg_entity_spans, neg_entity_spans_token, neg_entity_sizes, neg_l_offsets, neg_r_offsets, neg_offset_sample_masks = map(list, zip(*neg_entity_samples) if neg_entity_samples else ([], [], [], [], [], [], [], []))
+    neg_ious, neg_entity_types, neg_entity_spans, neg_entity_spans_token, neg_entity_sizes, neg_l_offsets, neg_r_offsets, neg_offset_sample_masks = map(
+        list, zip(*neg_entity_samples) if neg_entity_samples else ([], [], [], [], [], [], [], []))
 
     pos_entity_masks_token = [create_entity_mask(*span, token_count) for span in pos_entity_spans_token]
     pos_entity_masks = [create_entity_mask(*span, context_size) for span in pos_entity_spans]
@@ -169,8 +173,6 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
     neg_rels = [(pos_entity_spans.index(s1), pos_entity_spans.index(s2)) for s1, s2 in neg_rel_spans]
     neg_rel_masks = [create_rel_mask(*spans, context_size) for spans in neg_rel_spans]
     neg_rel_types = [0] * len(neg_rel_spans)
-
-
 
     rels = pos_rels + neg_rels
     rel_types = [r.index for r in pos_rel_types] + neg_rel_types
@@ -244,14 +246,18 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, window_s
     rel_types_onehot = torch.zeros([rel_types.shape[0], rel_type_count], dtype=torch.float32)
     rel_types_onehot.scatter_(1, rel_types.unsqueeze(1), 1)
     rel_types_onehot = rel_types_onehot[:, 1:]  # all zeros for 'none' relation
-    
+
     # import pdb; pdb.set_trace()
-    return dict(encodings=encodings, context_masks=context_masks, token_masks_bool=token_masks_bool, token_masks=token_masks, 
-                entity_masks =entity_masks, entity_masks_token = entity_masks_token, entity_spans_token = entity_spans_token,
+    return dict(encodings=encodings, context_masks=context_masks, token_masks_bool=token_masks_bool,
+                token_masks=token_masks,
+                entity_masks=entity_masks, entity_masks_token=entity_masks_token, entity_spans_token=entity_spans_token,
                 entity_sizes=entity_sizes, entity_types=entity_types, entity_types_1=entity_types_1,
                 rels=rels, rel_masks=rel_masks, rel_types=rel_types_onehot,
-                token_sample_masks=token_sample_mask, entity_sample_masks=entity_sample_masks, rel_sample_masks=rel_sample_masks,
-                l_offsets=l_offsets,r_offsets=r_offsets,offset_sample_masks=offset_sample_masks,ious=ious, pos_encoding = pos_encoding, wordvec_encoding = wordvec_encoding, char_encoding = char_encoding, token_masks_char = token_masks_char, char_count = char_count)
+                token_sample_masks=token_sample_mask, entity_sample_masks=entity_sample_masks,
+                rel_sample_masks=rel_sample_masks,
+                l_offsets=l_offsets, r_offsets=r_offsets, offset_sample_masks=offset_sample_masks, ious=ious,
+                pos_encoding=pos_encoding, wordvec_encoding=wordvec_encoding, char_encoding=char_encoding,
+                token_masks_char=token_masks_char, char_count=char_count)
 
 
 def create_eval_sample(doc, window_sizes: int):
@@ -269,11 +275,10 @@ def create_eval_sample(doc, window_sizes: int):
     char_count = []
     for char_encoding_token in char_encodings:
         char_count.append(len(char_encoding_token))
-        char_encoding.append(torch.tensor(char_encoding_token,dtype=torch.long))
+        char_encoding.append(torch.tensor(char_encoding_token, dtype=torch.long))
     char_encoding = util.padded_stack(char_encoding)
-    token_masks_char = (char_encoding!=0).long()
-    char_count = torch.tensor(char_count, dtype = torch.long)
-
+    token_masks_char = (char_encoding != 0).long()
+    char_count = torch.tensor(char_count, dtype=torch.long)
 
     # all tokens
     # token_masks_char = []
@@ -283,7 +288,7 @@ def create_eval_sample(doc, window_sizes: int):
         # token_pos.append(t.pos)
         token_masks.append(create_entity_mask(*t.span, context_size))
         # token_masks_char.append(create_entity_mask(*t.char_span, char_count))
-        token_sizes.append(t.span_end-t.span_start)
+        token_sizes.append(t.span_end - t.span_start)
 
     token_sample_mask = torch.ones([len(token_spans)], dtype=torch.bool)
     token_masks = torch.stack(token_masks)
@@ -295,32 +300,31 @@ def create_eval_sample(doc, window_sizes: int):
     entity_sizes = []
     entity_spans_token = []
     entity_masks_token = []
-    window_sizes = range(window_sizes[-1]+1)
+    window_sizes = range(window_sizes[-1] + 1)
     for window_size in window_sizes:
         for i in range(0, token_count):
             # w_left = max(0, i - window_size)
             w_left = i
-            w_right = min(token_count, i + window_size + 1) 
+            w_right = min(token_count, i + window_size + 1)
             span = doc.tokens[w_left:w_right].span
-            span_token =  doc.tokens[w_left:w_right].span_token
+            span_token = doc.tokens[w_left:w_right].span_token
             if span not in entity_spans:
                 entity_spans.append(span)
                 entity_spans_token.append(span_token)
                 entity_masks.append(create_entity_mask(*span, context_size))
                 entity_masks_token.append(create_entity_mask(*span_token, token_count))
                 # entity_spans_token.append(span_token)
-                entity_sizes.append(w_right-w_left)
+                entity_sizes.append(w_right - w_left)
     # v_map["enumerate_count"] += len(entity_spans)
     set_v("enumerate_count", get_v("enumerate_count") + len(entity_spans))
     encodings = torch.tensor(encodings, dtype=torch.long)
     # char_encoding = torch.tensor(char_encoding, dtype=torch.long)
     pos_encoding = torch.tensor(pos_encoding, dtype=torch.long)
     wordvec_encoding = torch.tensor(wordvec_encoding, dtype=torch.long)
-    
+
     context_masks = torch.ones(context_size, dtype=torch.bool)
     token_masks_bool = torch.ones(token_count, dtype=torch.bool)
     # char_masks_bool = torch.ones(char_count, dtype=torch.bool)
-    
 
     # entities
     if entity_masks:
@@ -344,9 +348,12 @@ def create_eval_sample(doc, window_sizes: int):
         entity_masks_token = torch.zeros([1, token_count], dtype=torch.bool)
     # import pdb; pdb.set_trace()
     # print(enumerate_count)
-    return dict(encodings=encodings, context_masks=context_masks, token_masks_bool=token_masks_bool,token_masks=token_masks, 
-                entity_masks=entity_masks, entity_masks_token = entity_masks_token,
-                entity_sizes=entity_sizes, entity_spans=entity_spans, entity_spans_token=entity_spans_token, entity_sample_masks=entity_sample_masks, pos_encoding = pos_encoding, wordvec_encoding = wordvec_encoding, char_encoding = char_encoding, token_masks_char = token_masks_char, char_count = char_count)
+    return dict(encodings=encodings, context_masks=context_masks, token_masks_bool=token_masks_bool,
+                token_masks=token_masks,
+                entity_masks=entity_masks, entity_masks_token=entity_masks_token,
+                entity_sizes=entity_sizes, entity_spans=entity_spans, entity_spans_token=entity_spans_token,
+                entity_sample_masks=entity_sample_masks, pos_encoding=pos_encoding, wordvec_encoding=wordvec_encoding,
+                char_encoding=char_encoding, token_masks_char=token_masks_char, char_count=char_count)
 
 
 def create_entity_mask(start, end, context_size):

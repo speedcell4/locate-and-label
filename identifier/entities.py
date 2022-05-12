@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from typing import List
+
 from torch.utils.data import Dataset as TorchDataset
 
 from identifier import sampling
@@ -85,7 +86,8 @@ class EntityType:
 
 class Token:
     # POS_MAP = ["ADJ", "ADP", "ADV", "AUX", "CONJ", "CCONJ", "DET", "INTJ", "NOUN", "NUM", "PART", "PRON", "PROPN", "PUNCT", "SCONJ", "SYM", "VERB", "X", "SPACE"]
-    def __init__(self, tid: int, index: int, span_start: int, span_end: int, phrase: str, pos: int, vocab_id: int, char_start: int, char_end: int):
+    def __init__(self, tid: int, index: int, span_start: int, span_end: int, phrase: str, pos: int, vocab_id: int,
+                 char_start: int, char_end: int):
         self._tid = tid  # ID within the corresponding dataset
         self._index = index  # original token index in document
 
@@ -136,7 +138,7 @@ class Token:
     @property
     def pos(self):
         return self._pos
-    
+
     @property
     def pos_id(self):
         # return self.POS_MAP.index(self._pos)
@@ -175,7 +177,7 @@ class TokenSpan:
 
     @property
     def span_token(self):
-        return self._tokens[0].index,self._tokens[-1].index + 1
+        return self._tokens[0].index, self._tokens[-1].index + 1
 
     def __getitem__(self, s):
         if isinstance(s, slice):
@@ -206,7 +208,7 @@ class Entity:
         return self.span_start, self.span_end, self._entity_type
 
     def as_tuple_token(self):
-        return self._tokens[0].index,self._tokens[-1].index+1, self._entity_type
+        return self._tokens[0].index, self._tokens[-1].index + 1, self._entity_type
 
     @property
     def entity_type(self):
@@ -230,7 +232,7 @@ class Entity:
 
     @property
     def span_token(self):
-        return self._tokens[0].index,self._tokens[-1].index+1
+        return self._tokens[0].index, self._tokens[-1].index + 1
 
     @property
     def phrase(self):
@@ -342,7 +344,6 @@ class Document:
     def char_encoding(self):
         return self._char_encoding
 
-
     @encoding.setter
     def encoding(self, value):
         self._encoding = value
@@ -410,8 +411,8 @@ class Dataset(TorchDataset):
         self._rid = 0
         self._eid = 0
         self._tid = 0
-        self.iou_min=iou_min
-        self.iou_max=iou_max
+        self.iou_min = iou_min
+        self.iou_max = iou_max
 
     def iterate_documents(self, batch_size, order=None, truncate=False):
         return BatchIterator(self.documents, batch_size, order=order, truncate=truncate)

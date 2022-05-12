@@ -1,10 +1,8 @@
-from enum import unique
-from .entities import Token
 import json
 import os
-import warnings
 from typing import List, Tuple, Dict
 
+import jinja2
 import torch
 from sklearn.metrics import precision_recall_fscore_support as prfs
 from transformers import BertTokenizer
@@ -12,15 +10,16 @@ from transformers import BertTokenizer
 from identifier import util
 from identifier.entities import Document, Dataset, EntityType
 from identifier.input_reader import JsonInputReader
-import jinja2
-import math
+from .entities import Token
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 class Evaluator:
-    def __init__(self, dataset: Dataset, input_reader: JsonInputReader, text_encoder: BertTokenizer,no_overlapping: bool,
-                 predictions_path: str, examples_path: str, example_count: int, epoch: int, dataset_label: str, nms: float):
+    def __init__(self, dataset: Dataset, input_reader: JsonInputReader, text_encoder: BertTokenizer,
+                 no_overlapping: bool,
+                 predictions_path: str, examples_path: str, example_count: int, epoch: int, dataset_label: str,
+                 nms: float):
         self._text_encoder = text_encoder
         self._input_reader = input_reader
         self._dataset = dataset
@@ -43,13 +42,14 @@ class Evaluator:
         self._nms = nms
         self._convert_gt(self._dataset.documents)
 
-    def eval_batch(self, batch_entity_clf: torch.tensor,  spn_mask:torch.tensor, offsets1:torch.tensor, offsets2:torch.tensor,  batch: dict, illegal_mask):
+    def eval_batch(self, batch_entity_clf: torch.tensor, spn_mask: torch.tensor, offsets1: torch.tensor,
+                   offsets2: torch.tensor, batch: dict, illegal_mask):
         batch_size = batch_entity_clf.shape[0]
         # import pdb; pdb.set_trace()
         # get maximum activation (index of predicted entity type)
         batch_entity_types = batch_entity_clf.argmax(dim=-1)
         # apply entity sample mask
-        batch_entity_types *= (batch['entity_sample_masks'].long() * ( spn_mask * illegal_mask).long())
+        batch_entity_types *= (batch['entity_sample_masks'].long() * (spn_mask * illegal_mask).long())
         # print(offsets)
         r_offsets1 = torch.round(offsets1).long()
         # r_offsets2 = torch.round(offsets2).long()
@@ -60,15 +60,17 @@ class Evaluator:
             entity_types = batch_entity_types[i]
 
             # get entities that are not classified as 'None'
-            valid_entity_indices = entity_types.nonzero(as_tuple = False).view(-1)
+            valid_entity_indices = entity_types.nonzero(as_tuple=False).view(-1)
             valid_entity_types = entity_types[valid_entity_indices]
 
             # old = batch['entity_spans_token'][i][valid_entity_indices]
             # valid_entity_spans = old + torch.round(offsets[i][valid_entity_indices]).long()
             # print(offsets)
-            valid_entity_offsets_confidence_1 = 1 - 2*torch.abs(offsets1[i][valid_entity_indices] - r_offsets1[i][valid_entity_indices])
+            valid_entity_offsets_confidence_1 = 1 - 2 * torch.abs(
+                offsets1[i][valid_entity_indices] - r_offsets1[i][valid_entity_indices])
             # valid_entity_offsets_confidence_2 = 0.5 - torch.abs(offsets2[i][valid_entity_indices] - r_offsets2[i][valid_entity_indices])
-            valid_entity_offsets_confidence = r_offsets1[i][valid_entity_indices]*10+valid_entity_offsets_confidence_1
+            valid_entity_offsets_confidence = r_offsets1[i][
+                                                  valid_entity_indices] * 10 + valid_entity_offsets_confidence_1
             # token_count =  batch['token_masks_bool'][i].long().sum()
             # valid_entity_spans[valid_entity_spans[:,0]>=valid_entity_spans[:,1]]=old[valid_entity_spans[:,0]>=valid_entity_spans[:,1]]
             # valid_entity_spans[:,0][valid_entity_spans[:,0]<0]=old[:,0][valid_entity_spans[:,0]<0]
@@ -76,15 +78,15 @@ class Evaluator:
             # valid_entity_scores = torch.gather(batch_entity_clf[i][valid_entity_indices], 1,
             #                                    valid_entity_types.unsqueeze(1)).view(-1)
 
-            
             old = batch['entity_spans_token'][i][valid_entity_indices]
             valid_entity_spans = old + offsets[i][valid_entity_indices].long()
 
-            token_count =  batch['token_masks_bool'][i].long().sum()
+            token_count = batch['token_masks_bool'][i].long().sum()
 
-            valid_entity_spans[:,0][valid_entity_spans[:,0]<0] = 0
-            valid_entity_spans[:,1][valid_entity_spans[:,1]>token_count] = token_count
-            valid_entity_spans[valid_entity_spans[:,0]>=valid_entity_spans[:,1]]=(old+r_offsets1[i][valid_entity_indices].long())[valid_entity_spans[:,0]>=valid_entity_spans[:,1]]
+            valid_entity_spans[:, 0][valid_entity_spans[:, 0] < 0] = 0
+            valid_entity_spans[:, 1][valid_entity_spans[:, 1] > token_count] = token_count
+            valid_entity_spans[valid_entity_spans[:, 0] >= valid_entity_spans[:, 1]] = \
+                (old + r_offsets1[i][valid_entity_indices].long())[valid_entity_spans[:, 0] >= valid_entity_spans[:, 1]]
 
             valid_entity_scores = torch.gather(batch_entity_clf[i][valid_entity_indices], 1,
                                                valid_entity_types.unsqueeze(1)).view(-1)
@@ -129,7 +131,7 @@ class Evaluator:
                 converted_entities.append(converted_entity)
             converted_entities = sorted(converted_entities, key=lambda e: e['start'])
 
-            doc_predictions = dict(tokens=[t.phrase for t in tokens], entities=converted_entities,)
+            doc_predictions = dict(tokens=[t.phrase for t in tokens], entities=converted_entities, )
             predictions.append(doc_predictions)
 
         # store as json
@@ -144,16 +146,16 @@ class Evaluator:
         for pre, gt in zip(self._raw_preds, self._gt_entities):
             def is_match(ent):
                 for gt_ent in gt:
-                    if ent["start"] == gt_ent[0] and  ent["end"] == gt_ent[1] and ent["entity_type"] == gt_ent[2].identifier:
+                    if ent["start"] == gt_ent[0] and ent["end"] == gt_ent[1] and ent["entity_type"] == gt_ent[
+                        2].identifier:
                         return True
                 else:
                     return False
+
             pre_match_gt = list(filter(is_match, pre))
             raw_preds_match_gt.append(pre_match_gt)
         with open(self._predictions_path % ("valid_all_match_gt", epoch), 'w') as predictions_file:
             json.dump(raw_preds_match_gt, predictions_file)
-
-        
 
     def store_examples(self):
         entity_examples = []
@@ -188,9 +190,10 @@ class Evaluator:
 
             self._gt_entities.append(sample_gt_entities)
 
-    def _convert_pred_entities(self, pred_types: torch.tensor, pred_spans: torch.tensor, pred_scores: torch.tensor, offsets_confidence):
+    def _convert_pred_entities(self, pred_types: torch.tensor, pred_spans: torch.tensor, pred_scores: torch.tensor,
+                               offsets_confidence):
         converted_preds = []
-        
+
         raw_pred = []
         for i in range(pred_types.shape[0]):
             label_idx = pred_types[i].item()
@@ -202,7 +205,9 @@ class Evaluator:
 
             converted_pred = (start, end, entity_type, cls_score, left_reg_score, right_reg_score)
             converted_preds.append(converted_pred)
-            raw_pred.append({"start": start, "end": end, "entity_type":entity_type.identifier, "cls_score": round(cls_score, 2), "left_reg_score": round(left_reg_score,2), "right_reg_score":round(right_reg_score,2)})
+            raw_pred.append(
+                {"start": start, "end": end, "entity_type": entity_type.identifier, "cls_score": round(cls_score, 2),
+                 "left_reg_score": round(left_reg_score, 2), "right_reg_score": round(right_reg_score, 2)})
         self._raw_preds.append(raw_pred)
         # print(converted_preds)
         preds = []
@@ -223,15 +228,15 @@ class Evaluator:
             cls_s = i[3]
             l_s = i[4]
             r_s = i[5]
-            for j in converted_preds[ind+1:]:
-                
-                if i[0]==j[0] and i[1]==j[1] and i[2]==j[2]:
+            for j in converted_preds[ind + 1:]:
+
+                if i[0] == j[0] and i[1] == j[1] and i[2] == j[2]:
                     cls_s += i[3]
                     l_s = max(l_s, j[4])
                     r_s = max(r_s, j[5])
             # i = (i[0], i[1], i[2], max(i[3], j[3]), max(i[4], j[4]), max(i[5], j[5]))
             i = (i[0], i[1], i[2], cls_s, l_s, r_s)
-                    # break
+            # break
             # if i not in preds:
             #     preds.append(i)
             # preds.append((i[0], i[1], i[2], i[3], math.pow(10, i[4]), math.pow(10, i[5])))
@@ -243,7 +248,7 @@ class Evaluator:
 
     def nms(self, preds):
         # preds = list(filter(lambda x: x[4]>0.9 and x[5]>0.9, preds))
-        preds = sorted(preds, key = lambda x: x[3], reverse=True)
+        preds = sorted(preds, key=lambda x: x[3], reverse=True)
         # return preds[:len(preds)//2]
         throw_preds = []
         results = []
@@ -262,8 +267,7 @@ class Evaluator:
         # soft nms
         self._nms_decay = 0.9
         self._nms_shohold = 0.6
-        
-        
+
         # r = []
         # for pre in preds:
         #     can_s, can_e, ty_e, score_e, l_reg_score,r_reg_score = pre
@@ -272,13 +276,13 @@ class Evaluator:
         preds = self._remove_partial_overlapping(preds)
         size = len(preds)
         for i, pre in enumerate(preds):
-            start, end, _, score, _,_ = pre
-            for j in range(i+1,size):
-                can_s, can_e, ty_e, score_e, l_reg_score,r_reg_score= preds[j]
+            start, end, _, score, _, _ = pre
+            for j in range(i + 1, size):
+                can_s, can_e, ty_e, score_e, l_reg_score, r_reg_score = preds[j]
                 if util.iou((start, end), (can_s, can_e)) > self._nms_shohold:
-                    preds[j] = (can_s, can_e, ty_e, score_e* self._nms_decay,l_reg_score,r_reg_score )
+                    preds[j] = (can_s, can_e, ty_e, score_e * self._nms_decay, l_reg_score, r_reg_score)
                     not_insert = 1
-                    for k in range(j+1, size):
+                    for k in range(j + 1, size):
                         if score_e > preds[k][3]:
                             not_insert = 0
                             preds.insert(k, preds[j])
@@ -286,9 +290,8 @@ class Evaluator:
                     if not_insert:
                         preds.append(preds[j])
                     del preds[j]
-        
-        return list(filter(lambda x: x[3]>self._nms, preds) )
-    
+
+        return list(filter(lambda x: x[3] > self._nms, preds))
 
     def _remove_overlapping(self, entities):
         non_overlapping_entities = []
@@ -325,9 +328,9 @@ class Evaluator:
             return False
         else:
             return True
-    
+
     def _check_partial_overlap(self, e1, e2):
-        if (e1[0] < e2[0] and e2[0]<e1[1] and e1[1]<e2[1] ) or  (e2[0]<e1[0] and e1[0] < e2[1] and e2[1] < e1[1]):
+        if (e1[0] < e2[0] and e2[0] < e1[1] and e1[1] < e2[1]) or (e2[0] < e1[0] and e1[0] < e2[1] and e2[1] < e1[1]):
             return True
         else:
             return False
@@ -495,8 +498,6 @@ class Evaluator:
         for token in tokens:
             phrases.append(token.phrase)
         text = " ".join(phrases)
-        
-
 
         # text = self._prettify(self._text_encoder.decode(encoding))
         text = self._prettify(text)
@@ -518,15 +519,15 @@ class Evaluator:
         e1 = ""
         for i in range(start):
             ctx_before += tokens[i].phrase
-            if i!=start-1:
+            if i != start - 1:
                 ctx_before += " "
         for i in range(end, len(tokens)):
             ctx_after += tokens[i].phrase
-            if i!=(len(tokens)-1):
+            if i != (len(tokens) - 1):
                 ctx_after += " "
         for i in range(start, end):
             e1 += tokens[i].phrase
-            if i!=end-1:
+            if i != end - 1:
                 e1 += " "
 
         html = ctx_before + tag_start + e1 + '</span> ' + ctx_after

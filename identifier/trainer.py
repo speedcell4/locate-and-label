@@ -6,13 +6,13 @@ import sys
 from typing import List, Dict, Tuple
 
 import torch
+import torch.utils.tensorboard as tensorboard
 from torch.nn import DataParallel
 from torch.optim import Optimizer
 from transformers import PreTrainedModel
 from transformers import PreTrainedTokenizer
 
 from identifier import util
-import torch.utils.tensorboard as tensorboard
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -62,9 +62,9 @@ class BaseTrainer:
         # CUDA devices
         # self._device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
         if args.cpu:
-            device="cpu"
+            device = "cpu"
         else:
-            device="cuda:"+args.device_id
+            device = "cuda:" + args.device_id
         self._device = torch.device(device)
         self._gpu_count = torch.cuda.device_count()
 
@@ -77,7 +77,7 @@ class BaseTrainer:
             dic = dict()
 
             for key, columns in data.items():
-                path = os.path.join(self._log_path, '%s_%s.csv' % (key, label))
+                path = os.path.join(self._log_path, f'{key}_{label}.csv')
                 util.create_csv(path, *columns)
                 dic[key] = path
 
@@ -91,7 +91,7 @@ class BaseTrainer:
 
     def _log_tensorboard(self, dataset_label: str, data_label: str, data: object, iteration: int):
         if self._summary_writer is not None:
-            self._summary_writer.add_scalar('data/%s/%s' % (dataset_label, data_label), data, iteration)
+            self._summary_writer.add_scalar(f'data/{dataset_label}/{data_label}', data, iteration)
 
     def _log_csv(self, dataset_label: str, data_label: str, *data: Tuple[object]):
         logs = self._log_paths[dataset_label]
@@ -100,10 +100,10 @@ class BaseTrainer:
     def _save_best(self, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, optimizer: Optimizer,
                    accuracy: float, iteration: int, label: str, extra=None):
         if accuracy > self._best_results[label]:
-            self._logger.info("[%s] Best model in iteration %s: %s%% accuracy" % (label, iteration, accuracy))
+            self._logger.info(f"[{label}] Best model in iteration {iteration}: {accuracy}% accuracy")
             self._save_model(self._save_path, model, tokenizer, iteration,
                              optimizer=optimizer if self.args.save_optimizer else None,
-                             save_as_best=True, name='model_%s' % label, extra=extra)
+                             save_as_best=True, name=f'model_{label}', extra=extra)
             self._best_results[label] = accuracy
 
     def _save_model(self, save_path: str, model: PreTrainedModel, tokenizer: PreTrainedTokenizer,
@@ -118,9 +118,9 @@ class BaseTrainer:
             extra_state.update(extra)
 
         if save_as_best:
-            dir_path = os.path.join(save_path, '%s_best' % name)
+            dir_path = os.path.join(save_path, f'{name}_best')
         else:
-            dir_name = '%s_%s' % (name, iteration) if include_iteration else name
+            dir_name = f'{name}_{iteration}' if include_iteration else name
             dir_path = os.path.join(save_path, dir_name)
 
         util.create_directories_dir(dir_path)

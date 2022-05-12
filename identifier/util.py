@@ -86,15 +86,15 @@ def copy_python_directory(source, dest, ignore_dirs=None):
 def save_dict(log_path, dic, name):
     # save arguments
     # 1. as json
-    path = os.path.join(log_path, '%s.json' % name)
+    path = os.path.join(log_path, f'{name}.json')
     f = open(path, 'w')
     json.dump(vars(dic), f)
     f.close()
 
     # 2. as string
-    path = os.path.join(log_path, '%s.txt' % name)
+    path = os.path.join(log_path, f'{name}.txt')
     f = open(path, 'w')
-    args_str = ["%s = %s" % (key, value) for key, value in vars(dic).items()]
+    args_str = [f"{key} = {value}" for key, value in vars(dic).items()]
     f.write('\n'.join(args_str))
     f.close()
 
@@ -103,7 +103,7 @@ def summarize_dict(summary_writer, dic, name):
     table = 'Argument|Value\n-|-'
 
     for k, v in vars(dic).items():
-        row = '\n%s|%s' % (k, v)
+        row = f'\n{k}|{v}'
         table += row
     summary_writer.add_text(name, table)
 
@@ -210,8 +210,9 @@ def to_device(batch, device):
 
     return converted_batch
 
-def iou(a,b):
-    iou=0
-    if max(a[0],b[0])<min(a[1],b[1]):
-        iou = (min(a[1],b[1])-max(a[0],b[0]))/(max(a[1],b[1])-min(a[0],b[0]))
+
+def iou(a, b):
+    iou = 0
+    if max(a[0], b[0]) < min(a[1], b[1]):
+        iou = (min(a[1], b[1]) - max(a[0], b[0])) / (max(a[1], b[1]) - min(a[0], b[0]))
     return iou

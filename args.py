@@ -50,19 +50,17 @@ def _add_common_args(arg_parser):
     arg_parser.add_argument('--use_glove', action='store_true', default=False)
     arg_parser.add_argument('--use_pos', action='store_true', default=False)
     arg_parser.add_argument('--use_char_lstm', action='store_true', default=False)
-    arg_parser.add_argument('--pool_type', type=str, default = "max")
+    arg_parser.add_argument('--pool_type', type=str, default="max")
     arg_parser.add_argument('--use_entity_ctx', action='store_true', default=False)
-    arg_parser.add_argument('--wordvec_path', type=str, default = "../glove/glove.6B.300d.txt")
+    arg_parser.add_argument('--wordvec_path', type=str, default="../glove/glove.6B.300d.txt")
     arg_parser.add_argument('--use_size_embedding', action='store_true', default=False)
     arg_parser.add_argument('--reduce_dim', action='store_true', default=False)
     arg_parser.add_argument('--bert_before_lstm', action='store_true', default=False)
     arg_parser.add_argument('--no_filter', action='store_true', default=False)
     arg_parser.add_argument('--no_regressor', action='store_true', default=False)
-    arg_parser.add_argument('--norm', type=str, default = "sigmoid")
+    arg_parser.add_argument('--norm', type=str, default="sigmoid")
     arg_parser.add_argument('--no_times_count', action='store_true', default=False)
 
-    
-    
     # Misc
     arg_parser.add_argument('--seed', type=int, default=-1, help="Seed")
     arg_parser.add_argument('--cache_path', type=str, default=None,

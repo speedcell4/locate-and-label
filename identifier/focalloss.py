@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class FocalLoss(nn.Module):
     r"""
     """
-    def __init__(self, class_num, alpha=None, gamma=2, reduction = "none"):
+
+    def __init__(self, class_num, alpha=None, gamma=2, reduction="none"):
         super(FocalLoss, self).__init__()
         if alpha is None:
             self.alpha = torch.ones(class_num, 1)
@@ -28,15 +30,15 @@ class FocalLoss(nn.Module):
         self.alpha = self.alpha.to(device=inputs.device)
         alpha = self.alpha[ids.data.view(-1)]
 
-        probs = (P*class_mask).sum(1).view(-1,1)
+        probs = (P * class_mask).sum(1).view(-1, 1)
 
         log_p = probs.log()
 
-        batch_loss = -alpha*(torch.pow((1-probs), self.gamma))*log_p 
+        batch_loss = -alpha * (torch.pow((1 - probs), self.gamma)) * log_p
 
         loss = batch_loss
-        if self.reduction=="mean":
+        if self.reduction == "mean":
             loss = batch_loss.mean()
-        if self.reduction=="sum":
+        if self.reduction == "sum":
             loss = batch_loss.sum()
         return loss

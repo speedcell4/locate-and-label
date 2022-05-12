@@ -1,22 +1,23 @@
 import json
+import os
+import string
 from abc import abstractmethod, ABC
+from collections import Counter
 from collections import OrderedDict
 from logging import Logger
-import os
 from typing import Iterable, List
-import numpy as np
-import string
 
+import numpy as np
 from tqdm import tqdm
 from transformers import BertTokenizer
 
 from identifier import util
 from identifier.entities import Dataset, EntityType, RelationType, Entity, Relation, Document
-from collections import Counter
 
 
 class BaseInputReader(ABC):
-    def __init__(self, types_path: str, tokenizer: BertTokenizer, iou_spn: float = 0.3, iou_classifier: float = 0.7, neg_entity_count: int = None,
+    def __init__(self, types_path: str, tokenizer: BertTokenizer, iou_spn: float = 0.3, iou_classifier: float = 0.7,
+                 neg_entity_count: int = None,
                  neg_rel_count: int = None, window_size: int = None, logger: Logger = None):
         types = json.load(open(types_path), object_pairs_hook=OrderedDict)  # entity + relation types
 
@@ -123,7 +124,7 @@ class BaseInputReader(ABC):
     def __str__(self):
         string = ""
         for dataset in self._datasets.values():
-            string += "Dataset: %s\n" % dataset
+            string += f"Dataset: {dataset}\n"
             string += str(dataset)
 
         return string
@@ -133,18 +134,22 @@ class BaseInputReader(ABC):
 
 
 class JsonInputReader(BaseInputReader):
-    def __init__(self, types_path: str, tokenizer: BertTokenizer, iou_spn: float = 0.3, iou_classifier : float = 1.0, neg_entity_count: int = None,
-                 neg_rel_count: int = None, window_size: int = None, logger: Logger = None, build_vocab = False, wordvec_filename = None):
-        super().__init__(types_path, tokenizer, iou_spn, iou_classifier, neg_entity_count, neg_rel_count, window_size, logger)
+    def __init__(self, types_path: str, tokenizer: BertTokenizer, iou_spn: float = 0.3, iou_classifier: float = 1.0,
+                 neg_entity_count: int = None,
+                 neg_rel_count: int = None, window_size: int = None, logger: Logger = None, build_vocab=False,
+                 wordvec_filename=None):
+        super().__init__(types_path, tokenizer, iou_spn, iou_classifier, neg_entity_count, neg_rel_count, window_size,
+                         logger)
         if "glove" in wordvec_filename:
-            vec_size = wordvec_filename.split(".")[-2] # str: 300d
+            vec_size = wordvec_filename.split(".")[-2]  # str: 300d
         else:
             vec_size = "bio"
-        if os.path.exists(os.path.dirname(types_path)+f"/vocab_{vec_size}.json") and os.path.exists(os.path.dirname(types_path)+f"/vocab_embed_{vec_size}.npy") :
+        if os.path.exists(os.path.dirname(types_path) + f"/vocab_{vec_size}.json") and os.path.exists(
+                os.path.dirname(types_path) + f"/vocab_embed_{vec_size}.npy"):
             print("Reused vocab!")
             self.build_vocab = False
-            self.word2inx = json.load(open(os.path.dirname(types_path)+f"/vocab_{vec_size}.json","r"))
-            self.embedding_weight = np.load(os.path.dirname(types_path)+f"/vocab_embed_{vec_size}.npy")
+            self.word2inx = json.load(open(os.path.dirname(types_path) + f"/vocab_{vec_size}.json", "r"))
+            self.embedding_weight = np.load(os.path.dirname(types_path) + f"/vocab_embed_{vec_size}.npy")
         else:
             print("Need some time to construct vocab...")
             self.word2inx = {"<unk>": 0}
@@ -157,7 +162,6 @@ class JsonInputReader(BaseInputReader):
             if v > 15:
                 self.POS_MAP.append(k)
         # self.POS_MAP = list({ for k, v in json.load(open(types_path.replace("types", "pos"))).items()}.keys())
-        
 
     def load_wordvec(self, filename):
         # word2vec = {}
@@ -167,10 +171,10 @@ class JsonInputReader(BaseInputReader):
         #     for line in f:
         #         fields = line.strip().split(' ')
         #         word2vec[fields[0]] = list(float(x) for x in fields[1:])
-        self.embedding_weight = np.random.rand(len(self.word2inx),len(next(iter(self.word2vec.values()))))
+        self.embedding_weight = np.random.rand(len(self.word2inx), len(next(iter(self.word2vec.values()))))
         for word, inx in self.word2inx.items():
             if word in self.word2vec:
-                self.embedding_weight[inx,:] = self.word2vec[word]
+                self.embedding_weight[inx, :] = self.word2vec[word]
 
     def read(self, dataset_paths):
         for dataset_label, dataset_path in dataset_paths.items():
@@ -179,19 +183,21 @@ class JsonInputReader(BaseInputReader):
             self._parse_dataset(dataset_path, dataset, dataset_label)
             self._datasets[dataset_label] = dataset
         if self.build_vocab:
-            json.dump(self.word2inx,open(os.path.dirname(next(iter(dataset_paths.values())))+f"/vocab_{self.vec_size}.json","w"))
+            json.dump(self.word2inx,
+                      open(os.path.dirname(next(iter(dataset_paths.values()))) + f"/vocab_{self.vec_size}.json", "w"))
             self.load_wordvec(self.wordvec_filename)
-            np.save(os.path.dirname(next(iter(dataset_paths.values())))+f"/vocab_embed_{self.vec_size}.npy",self.embedding_weight)
+            np.save(os.path.dirname(next(iter(dataset_paths.values()))) + f"/vocab_embed_{self.vec_size}.npy",
+                    self.embedding_weight)
         self._context_size = self._calc_context_size(self._datasets.values())
 
     def _parse_dataset(self, dataset_path, dataset, dataset_label):
         documents = json.load(open(dataset_path))
         if dataset_label == "train" and self.build_vocab:
             self._build_vocab(documents)
-        for document in tqdm(documents, desc="Parse dataset '%s'" % dataset.label):
+        for document in tqdm(documents, desc=f"Parse dataset '{dataset.label}'"):
             self._parse_document(document, dataset)
-    
-    def _build_vocab(self, documents, min_freq = 1):
+
+    def _build_vocab(self, documents, min_freq=1):
         self.word2vec = {}
         with open(self.wordvec_filename, "r") as f:
             if "glove" not in self.wordvec_filename:
@@ -213,7 +219,6 @@ class JsonInputReader(BaseInputReader):
         jpos = doc['pos']
         ltokens = doc["ltokens"]
         rtokens = doc["rtokens"]
-
 
         # parse tokens
         doc_tokens, doc_encoding, char_encoding = self._parse_tokens(jtokens, ltokens, rtokens, jpos, dataset)
@@ -250,7 +255,7 @@ class JsonInputReader(BaseInputReader):
         for token_phrase in ltokens:
             token_encoding = self._tokenizer.encode(token_phrase, add_special_tokens=False)
             doc_encoding += token_encoding
-        
+
         for i, token_phrase in enumerate(jtokens):
 
             # if self.build_vocab and token_phrase.lower() not in self.word2inx:
@@ -266,7 +271,7 @@ class JsonInputReader(BaseInputReader):
             span_start, span_end = (len(doc_encoding), len(doc_encoding) + len(token_encoding))
             char_start, char_end = (len(char_encoding), len(char_encoding) + len(token_encoding_char))
             # try:
-            if token_phrase.lower() in  self.word2inx:
+            if token_phrase.lower() in self.word2inx:
                 inx = self.word2inx[token_phrase.lower()]
             else:
                 inx = self.word2inx["<unk>"]
@@ -277,7 +282,7 @@ class JsonInputReader(BaseInputReader):
             char_encoding.append(token_encoding_char)
             # except:
             #     print(jtokens)
-        
+
         for token_phrase in rtokens:
             token_encoding = self._tokenizer.encode(token_phrase, add_special_tokens=False)
             doc_encoding += token_encoding

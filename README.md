@@ -1,6 +1,8 @@
 # README
 
-Code for Two-stage Identifier: "**Locate and Label: A Two-stage Identifier for Nested Named Entity Recognition**", accepted at ACL 2021. For details of the model and experiments, please see [our paper](https://arxiv.org/abs/2105.06804).
+Code for Two-stage Identifier: "**Locate and Label: A Two-stage Identifier for Nested Named Entity Recognition**",
+accepted at ACL 2021. For details of the model and experiments, please see [our paper](https://arxiv.org/abs/2105.06804)
+.
 
 ![](./assets/overview.png)
 
@@ -13,6 +15,7 @@ conda create --name acl python=3.8
 conda activate acl
 pip install -r requirements.txt
 ```
+
 ### Datasets
 
 The datasets used in our experiments:
@@ -23,22 +26,200 @@ The datasets used in our experiments:
 + GENIA: http://www.geniaproject.org/genia-corpus
 
 Data format:
+
 ```json
  {
-       "tokens": ["2004-12-20T15:37:00", "Microscopic", "microcap", "Everlast", ",", "mainly", "a", "maker", "of", "boxing", "equipment", ",", "has", "soared", "over", "the", "last", "several", "days", "thanks", "to", "a", "licensing", "deal", "with", "Jacques", "Moret", "allowing", "Moret", "to", "buy", "out", "their", "women", "'s", "apparel", "license", "for", "$", "30", "million", ",", "on", "top", "of", "a", "$", "12.5", "million", "payment", "now", "."], 
-       "pos": ["JJ", "JJ", "NN", "NNP", ",", "RB", "DT", "NN", "IN", "NN", "NN", ",", "VBZ", "VBN", "IN", "DT", "JJ", "JJ", "NNS", "NNS", "TO", "DT", "NN", "NN", "IN", "NNP", "NNP", "VBG", "NNP", "TO", "VB", "RP", "PRP$", "NNS", "POS", "NN", "NN", "IN", "$", "CD", "CD", ",", "IN", "NN", "IN", "DT", "$", "CD", "CD", "NN", "RB", "."], 
-       "entities": [{"type": "ORG", "start": 1, "end": 4}, {"type": "ORG", "start": 5, "end": 11}, {"type": "ORG", "start": 25, "end": 27}, {"type": "ORG", "start": 28, "end": 29}, {"type": "ORG", "start": 32, "end": 33}, {"type": "PER", "start": 33, "end": 34}], 
-       "ltokens": ["Everlast", "'s", "Rally", "Just", "Might", "Live", "up", "to", "the", "Name", "."], 
-       "rtokens": ["In", "other", "words", ",", "a", "competitor", "has", "decided", "that", "one", "segment", "of", "the", "company", "'s", "business", "is", "potentially", "worth", "$", "42.5", "million", "."],
-       "org_id": "MARKETVIEW_20041220.1537"
+  "tokens": [
+    "2004-12-20T15:37:00",
+    "Microscopic",
+    "microcap",
+    "Everlast",
+    ",",
+    "mainly",
+    "a",
+    "maker",
+    "of",
+    "boxing",
+    "equipment",
+    ",",
+    "has",
+    "soared",
+    "over",
+    "the",
+    "last",
+    "several",
+    "days",
+    "thanks",
+    "to",
+    "a",
+    "licensing",
+    "deal",
+    "with",
+    "Jacques",
+    "Moret",
+    "allowing",
+    "Moret",
+    "to",
+    "buy",
+    "out",
+    "their",
+    "women",
+    "'s",
+    "apparel",
+    "license",
+    "for",
+    "$",
+    "30",
+    "million",
+    ",",
+    "on",
+    "top",
+    "of",
+    "a",
+    "$",
+    "12.5",
+    "million",
+    "payment",
+    "now",
+    "."
+  ],
+  "pos": [
+    "JJ",
+    "JJ",
+    "NN",
+    "NNP",
+    ",",
+    "RB",
+    "DT",
+    "NN",
+    "IN",
+    "NN",
+    "NN",
+    ",",
+    "VBZ",
+    "VBN",
+    "IN",
+    "DT",
+    "JJ",
+    "JJ",
+    "NNS",
+    "NNS",
+    "TO",
+    "DT",
+    "NN",
+    "NN",
+    "IN",
+    "NNP",
+    "NNP",
+    "VBG",
+    "NNP",
+    "TO",
+    "VB",
+    "RP",
+    "PRP$",
+    "NNS",
+    "POS",
+    "NN",
+    "NN",
+    "IN",
+    "$",
+    "CD",
+    "CD",
+    ",",
+    "IN",
+    "NN",
+    "IN",
+    "DT",
+    "$",
+    "CD",
+    "CD",
+    "NN",
+    "RB",
+    "."
+  ],
+  "entities": [
+    {
+      "type": "ORG",
+      "start": 1,
+      "end": 4
+    },
+    {
+      "type": "ORG",
+      "start": 5,
+      "end": 11
+    },
+    {
+      "type": "ORG",
+      "start": 25,
+      "end": 27
+    },
+    {
+      "type": "ORG",
+      "start": 28,
+      "end": 29
+    },
+    {
+      "type": "ORG",
+      "start": 32,
+      "end": 33
+    },
+    {
+      "type": "PER",
+      "start": 33,
+      "end": 34
+    }
+  ],
+  "ltokens": [
+    "Everlast",
+    "'s",
+    "Rally",
+    "Just",
+    "Might",
+    "Live",
+    "up",
+    "to",
+    "the",
+    "Name",
+    "."
+  ],
+  "rtokens": [
+    "In",
+    "other",
+    "words",
+    ",",
+    "a",
+    "competitor",
+    "has",
+    "decided",
+    "that",
+    "one",
+    "segment",
+    "of",
+    "the",
+    "company",
+    "'s",
+    "business",
+    "is",
+    "potentially",
+    "worth",
+    "$",
+    "42.5",
+    "million",
+    "."
+  ],
+  "org_id": "MARKETVIEW_20041220.1537"
 }
 ```
 
-The `ltokens` contains the tokens from the previous sentence. And The `rtokens` contains the tokens from the next sentence.
+The `ltokens` contains the tokens from the previous sentence. And The `rtokens` contains the tokens from the next
+sentence.
 
-Due to the license of LDC, we cannot directly release our preprocessed datasets of ACE04, ACE05 and KBP17. We only release the preprocessed GENIA dataset and the corresponding word vectors and dictionary. Download them from [here](https://drive.google.com/file/d/13Lf_pQ1-QNI94EHlvtcFhUcQeQeUDq8l/view?usp=sharing). 
+Due to the license of LDC, we cannot directly release our preprocessed datasets of ACE04, ACE05 and KBP17. We only
+release the preprocessed GENIA dataset and the corresponding word vectors and dictionary. Download them
+from [here](https://drive.google.com/file/d/13Lf_pQ1-QNI94EHlvtcFhUcQeQeUDq8l/view?usp=sharing).
 
-If you need other datasets, please contact me (`syl@zju.edu.cn`) by email. Note that you need to state your identity and prove that you have obtained the LDC license.
+If you need other datasets, please contact me (`syl@zju.edu.cn`) by email. Note that you need to state your identity and
+prove that you have obtained the LDC license.
 
 ### Pretrained Wordvecs
 
@@ -60,6 +241,7 @@ Note: the BioWord2Vec needs to be converted from binary format to text format. T
 
 ```python
 from gensim.models.keyedvectors import KeyedVectors
+
 model = KeyedVectors.load_word2vec_format('PubMed-shuffle-win-30.bin', binary=True)
 model.save_word2vec_format('./PubMed-shuffle-win-30.txt', binary=False)
 ```
@@ -68,16 +250,18 @@ model.save_word2vec_format('./PubMed-shuffle-win-30.txt', binary=False)
 
 ### Train
 
-
 ```bash
 python identifier.py train --config configs/example.conf
 ```
 
-Note: You should edit this [line](https://github.com/tricktreat/locate-and-label/blob/3697adeaf36100f601366b233614699ae5ded965/config_reader.py#L17) in `config_reader.py` according to the actual number of GPUs. 
+Note: You should edit
+this [line](https://github.com/tricktreat/locate-and-label/blob/3697adeaf36100f601366b233614699ae5ded965/config_reader.py#L17)
+in `config_reader.py` according to the actual number of GPUs.
 
 ### Evaluation
 
-You can download our [checkpoints](https://drive.google.com/drive/folders/1NaoL42N-g1t9jiif427HZ6B8MjbyGTaZ?usp=sharing), or train your own model and then evaluate the model.
+You can download our [checkpoints](https://drive.google.com/drive/folders/1NaoL42N-g1t9jiif427HZ6B8MjbyGTaZ?usp=sharing)
+, or train your own model and then evaluate the model.
 
 ```bash
 cd data/
@@ -144,7 +328,6 @@ An entity is considered correct if the entity type and span is predicted correct
                macro        83.53        80.64        81.78         3035
 ```
 
-
 + KBP17:
 
 ```
@@ -161,9 +344,12 @@ An entity is considered correct if the entity type and span is predicted correct
                micro        85.31        82.96        84.12        12600
                macro        79.38        75.28        77.23        12600
 ```
+
 ### Quick Start
 
-The preprocessed GENIA dataset is [available](https://drive.google.com/file/d/13Lf_pQ1-QNI94EHlvtcFhUcQeQeUDq8l/view?usp=sharing), so we use it as an example to demonstrate the training and evaluation of the model.
+The preprocessed GENIA dataset
+is [available](https://drive.google.com/file/d/13Lf_pQ1-QNI94EHlvtcFhUcQeQeUDq8l/view?usp=sharing), so we use it as an
+example to demonstrate the training and evaluation of the model.
 
 ```bash
 cd identifier
@@ -173,11 +359,13 @@ cd data/datasets
 # download genia.zip (the preprocessed GENIA dataset, wordvec and vocabulary) from https://drive.google.com/file/d/13Lf_pQ1-QNI94EHlvtcFhUcQeQeUDq8l/view?usp=sharing.
 unzip genia.zip
 ```
+
 ```bash
 python identifier.py train --config configs/example.conf
 ```
 
 output:
+
 ```
 --- Entities (named entity recognition (NER)) ---
 An entity is considered correct if the entity type and span is predicted correctly
@@ -205,6 +393,7 @@ python identifier.py eval --config configs/eval.conf
 ```
 
 output:
+
 ```
 --------------------------------------------------
 Config:
@@ -257,6 +446,7 @@ An entity is considered correct if the entity type and span is predicted correct
 ```
 
 ## Citation
+
 If you have any questions related to the code or the paper, feel free to email `syl@zju.edu.cn`.
 
 ```bibtex

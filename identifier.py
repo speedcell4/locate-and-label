@@ -1,10 +1,10 @@
 import argparse
+import warnings
 
 from args import train_argparser, eval_argparser
 from config_reader import process_configs
 from identifier import input_reader
 from identifier.identifier_trainer import IdentifierTrainer
-import warnings
 
 warnings.filterwarnings("ignore")
 
